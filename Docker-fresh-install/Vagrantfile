@@ -1,0 +1,42 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  config.vm.box = "centos/7"	
+  config.vm.box_check_update = false
+  config.vm.network "private_network", ip: "192.168.69.5"
+  config.vm.hostname = "master"
+  config.vm.provision "shell", inline: <<-SHELL
+    uptime
+    yum -y update
+    yum list --upgradable
+    yum -y upgrade
+    useradd -m -G wheel exploit
+    loadkeys fr-latin9
+    yum -y install kdb-misc
+    export LC_TIME=en_US.UTF-8
+    date ; date -u
+    date -s `2018-01-01 00:00:00`
+    yum -y install ntpdate
+    ntpdate fr.pool.ntp.org
+    systemctl stop firewalld.service
+    systemctl disable firewalld.service
+    setenforce 0
+    curl -sSL https://get.docker.com/ | sh
+    systemctl enable docker.service
+    systemctl start docker.service 
+    echo "$(hostname) up"
+    usermod -aG docker exploit
+    echo "up"
+  SHELL
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "Docker-fresh-install"
+    vb.gui = false
+    vb.memory = 2048
+    vb.linked_clone = true
+  end
+end
